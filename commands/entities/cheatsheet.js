@@ -1,7 +1,7 @@
 const utils = require("../../utils/Utils");
 const Command = require("../../classes/Command");
 const { CommandInteraction } = require("discord.js");
-const { SlashCommandBuilder } = require("@discordjs/builders");
+const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder } = require("@discordjs/builders");
 const CheatSheet = require("../../database/models/CheatSheet");
 
 /**
@@ -101,6 +101,40 @@ async function list(interaction) {
 
 };
 
+/**
+ *
+ * @param {CommandInteraction} interaction
+ */
+async function show(interaction) {
+    const cheatSheets = await CheatSheet.find();
+    if(cheatSheets.length === 0) {
+        await interaction.reply({content: "No cheat sheet found.", ephemeral: true});
+        return;
+    };
+    try {
+        const embed = new EmbedBuilder()
+            .setTitle("Cheat sheets")
+            .setDescription("Here is the list of all the cheat sheets.")
+            .setColor([150, 50, 0])
+            .setTimestamp()
+            .setFooter({
+                text: "HolbieBot",
+                iconURL: interaction.client.user.avatarURL()
+            });
+
+        const fields = [];
+        for (let cheatSheet of cheatSheets) {
+            fields.push({name: `↓ ${cheatSheet.label} ↓`, value: `[Click me to open](${cheatSheet.link})`, inline: true});
+        };
+        embed.addFields(...fields);
+        await interaction.reply({embeds: [embed], ephemeral: true});
+    } catch (error) {
+        await interaction.reply({content: "An error occured while trying to list the cheat sheets.", ephemeral: true});
+        console.error(error);
+        return;
+    };
+};
+
 module.exports = new Command(
     new SlashCommandBuilder()
         .setName("cheatsheet")
@@ -132,10 +166,15 @@ module.exports = new Command(
             subcommand.setName("list")
             .setDescription("List all the cheat sheets.")
         )
+        .addSubcommand(subcommand =>
+            subcommand.setName("show")
+            .setDescription("Show all the cheat sheets.")
+        )
     ,
     async (interaction) => {
-        await interaction.reply("No command matching this name was found.");
+        await interaction.reply({content: "No command matching this name was found.", ephemeral: true});
     }
 ).addSubCallback("add", add)
 .addSubCallback("remove", remove)
-.addSubCallback("list", list);
+.addSubCallback("list", list)
+.addSubCallback("show", show);
