@@ -4,7 +4,7 @@ const { REST, Routes } = require('discord.js');
 const Command = require('../classes/Command');
 const commands = [];
 
-const rest = new REST().setToken(process.env.TOKEN_DEV);
+const rest = new REST().setToken(process.env.TOKEN);
 
 fs.readdirSync('./commands/entities').forEach((commandFile) => {
     /** @type {Command} */
@@ -23,7 +23,7 @@ fs.readdirSync('./commands/entities').forEach((commandFile) => {
         console.log('Started refreshing application (/) commands.');
 
         await rest.put(
-            Routes.applicationCommands(process.env.CLIENT_ID_DEV),
+            Routes.applicationCommands(process.env.CLIENT_ID),
             {body: commands},
         );
 
