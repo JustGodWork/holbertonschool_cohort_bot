@@ -1,17 +1,20 @@
+const fs = require("fs");
 const utils = require("../../utils/Utils");
 const Command = require("../../classes/Command");
-const { CommandInteraction } = require("discord.js");
-const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder } = require("@discordjs/builders");
+const PaginationData = require("../../classes/PaginationData");
 const CheatSheet = require("../../database/models/CheatSheet");
+const { CommandInteraction, Attachment } = require("discord.js");
+const PaginationButton = require("../../classes/PaginationButton");
+const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder } = require("@discordjs/builders");
 
 /**
- *
+ * Does data exist in the database
  * @param {Array<CheatSheet>} name
  * @param {String} name
  * @param {CommandInteraction} interaction
  * @return {Boolean}
  */
-async function doesCheatSheetExist(cheatSheets, name, interaction) {
+async function doesCheatSheetExist(cheatSheets, name) {
     for (let cheatSheet of cheatSheets) {
         if (cheatSheet.name === name) {
             return true;
@@ -82,23 +85,105 @@ async function remove(interaction) {
  *
  * @param {CommandInteraction} interaction
  */
-async function list(interaction) {
+async function request(interaction) {
+
     const cheatSheets = await CheatSheet.find();
+
     if(cheatSheets.length === 0) {
         await interaction.reply({content: "No cheat sheet found.", ephemeral: true});
         return;
     };
+
+    const file_name = `./data/${interaction.user.id}_current_request.json`;
+
     try {
-        let message = "***Here is the list of all the cheat sheets:***\n";
+        let data = [];
         for (let cheatSheet of cheatSheets) {
-            message += `**Name:** ${cheatSheet.name} - **Label:** ${cheatSheet.label} - **Link:** ${cheatSheet.link}\n`;
+            data.push({
+                name: cheatSheet.name,
+                label: cheatSheet.label,
+                link: cheatSheet.link,
+            });
         };
-        await interaction.reply({content: message, ephemeral: true});
+        fs.writeFileSync(file_name, JSON.stringify(data, null, 4));
+        await interaction.reply({
+            content: `There is **${data.length}** contents.`,
+            files: [
+                new Attachment({
+                    name: "data.json",
+                    url: file_name,
+                    ephemeral: true,
+                    contentType: "application/json",
+                    description: "Here is the list of all requested data."
+                }),
+            ],
+            ephemeral: true
+        });
+        fs.rmSync(file_name);
     } catch (error) {
-        await interaction.reply({content: "An error occured while trying to list the cheat sheets.", ephemeral: true});
+        await interaction.reply({content: "An error occured while requesting the cheat sheets.", ephemeral: true});
+        console.error(error);
         return;
     };
 
+};
+
+/**
+ * Create the embed
+ * @param {CommandInteraction} interaction
+ * @return {EmbedBuilder}
+ */
+function createEmbed(interaction) {
+    return new EmbedBuilder()
+        .setTitle("Cheat sheets")
+        .setDescription("Here is the list of all the cheat sheets.")
+        .setColor([150, 50, 0])
+        .setTimestamp()
+        .setFooter({
+            text: "HolbieBot",
+            iconURL: interaction.client.user.avatarURL()
+        });
+};
+
+/**
+ *
+ * @param {EmbedBuilder} embed
+ * @param {Array} data
+ */
+function formatEmbed(embed, data) {
+    embed.data.fields = [];
+    for (let value of data) {
+        embed.addFields({name: `↓${value.label}↓`, value: `[Click me to open](${value.link})`, inline: true});
+    };
+};
+
+/**
+ * Set the previous button callback
+ * @param {CommandInteraction} interaction
+ * @param {EmbedBuilder} embed
+ * @param {ActionRowBuilder} row
+ * @param {PaginationButton} button
+ */
+async function setPreviousPaginationCallback(interaction, embed, row, button) {
+    button.decrementPage();
+    formatEmbed(embed, button.data.getCurrent());
+    embed.setFooter({text:`HolbieBot | Page ${button.data.currentPage + 1}/${button.data.totalPages + 1}`, iconURL: embed.data.footer.icon_url});
+    await interaction.editReply({embeds: [embed], components: [row], ephemeral: true});
+};
+
+/**
+ * Set the next button callback
+ * @param {CommandInteraction} interaction
+ * @param {EmbedBuilder} embed
+ * @param {ActionRowBuilder} row
+ * @param {PaginationButton} button
+ * @return {number}
+ */
+async function setNextPaginationCallback(interaction, embed, row, button) {
+    button.incrementPage();
+    formatEmbed(embed, button.data.getCurrent());
+    embed.setFooter({text:`HolbieBot | Page ${button.data.currentPage + 1}/${button.data.totalPages + 1}`, iconURL: embed.data.footer.icon_url});
+    await interaction.editReply({embeds: [embed], components: [row], ephemeral: true});
 };
 
 /**
@@ -106,33 +191,45 @@ async function list(interaction) {
  * @param {CommandInteraction} interaction
  */
 async function show(interaction) {
+
     const cheatSheets = await CheatSheet.find();
+
     if(cheatSheets.length === 0) {
         await interaction.reply({content: "No cheat sheet found.", ephemeral: true});
         return;
     };
-    try {
-        const embed = new EmbedBuilder()
-            .setTitle("Cheat sheets")
-            .setDescription("Here is the list of all the cheat sheets.")
-            .setColor([150, 50, 0])
-            .setTimestamp()
-            .setFooter({
-                text: "HolbieBot",
-                iconURL: interaction.client.user.avatarURL()
-            });
 
-        const fields = [];
-        for (let cheatSheet of cheatSheets) {
-            fields.push({name: `↓ ${cheatSheet.label} ↓`, value: `[Click me to open](${cheatSheet.link})`, inline: true});
+    try {
+
+        const embed = createEmbed(interaction);
+        const data = new PaginationData(8, cheatSheets);
+        formatEmbed(embed, data.getCurrent());
+
+        if (cheatSheets.length >= data.limit) {
+
+            embed.setFooter({text:`HolbieBot | Page ${data.currentPage + 1}/${data.totalPages + 1}`, iconURL: embed.data.footer.icon_url});
+
+            const previous = new PaginationButton(`previous_help_${interaction.user.id}`, 'Previous page', PaginationButton.styles.SECONDARY, null, null, false, data);
+            const next = new PaginationButton(`next_help_${interaction.user.id}`, 'Next page', PaginationButton.styles.PRIMARY, null, null, false, data);
+
+            const row = new ActionRowBuilder()
+                .addComponents(previous.handle, next.handle);
+
+            previous.setCallback(async () => await setPreviousPaginationCallback(interaction, embed, row, previous));
+            next.setCallback(async () => await setNextPaginationCallback(interaction, embed, row, next));
+
+            await interaction.reply({embeds: [embed], components: [row], ephemeral: true});
+
+        } else {
+            await interaction.reply({embeds: [embed], ephemeral: true});
         };
-        embed.addFields(...fields);
-        await interaction.reply({embeds: [embed], ephemeral: true});
+
     } catch (error) {
         await interaction.reply({content: "An error occured while trying to list the cheat sheets.", ephemeral: true});
         console.error(error);
         return;
     };
+
 };
 
 module.exports = new Command(
@@ -163,8 +260,8 @@ module.exports = new Command(
             )
         )
         .addSubcommand(subcommand =>
-            subcommand.setName("list")
-            .setDescription("List all the cheat sheets.")
+            subcommand.setName("request")
+            .setDescription("Request all the cheat sheets in JSON format.")
         )
         .addSubcommand(subcommand =>
             subcommand.setName("show")
@@ -176,5 +273,5 @@ module.exports = new Command(
     }
 ).addSubCallback("add", add)
 .addSubCallback("remove", remove)
-.addSubCallback("list", list)
+.addSubCallback("request", request)
 .addSubCallback("show", show);
