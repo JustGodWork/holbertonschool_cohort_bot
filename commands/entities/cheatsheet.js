@@ -5,7 +5,7 @@ const PaginationData = require("../../classes/PaginationData");
 const CheatSheet = require("../../database/models/CheatSheet");
 const { CommandInteraction, Attachment } = require("discord.js");
 const PaginationButton = require("../../classes/PaginationButton");
-const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder } = require("@discordjs/builders");
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder } = require("@discordjs/builders");
 
 /**
  * Does data exist in the database
@@ -220,9 +220,7 @@ async function show(interaction) {
 
             await interaction.reply({embeds: [embed], components: [row], ephemeral: true});
 
-        } else {
-            await interaction.reply({embeds: [embed], ephemeral: true});
-        };
+        } else await interaction.reply({embeds: [embed], ephemeral: true});
 
     } catch (error) {
         await interaction.reply({content: "An error occured while trying to list the cheat sheets.", ephemeral: true});
