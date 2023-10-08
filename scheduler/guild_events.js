@@ -59,7 +59,7 @@ function initializeEventScheduler() {
     scheduler.scheduleJob({
         hour: 12,
         minute: 48,
-        dayOfWeek: new scheduler.Range(0, 5)
+        dayOfWeek: new scheduler.Range(1, 5)
     }, async () => {
 
         const guilds = client.guilds.cache;
