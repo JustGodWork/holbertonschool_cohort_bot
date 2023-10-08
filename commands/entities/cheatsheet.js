@@ -209,8 +209,8 @@ async function show(interaction) {
 
             embed.setFooter({text:`HolbieBot | Page ${data.currentPage + 1}/${data.totalPages + 1}`, iconURL: embed.data.footer.icon_url});
 
-            const previous = new PaginationButton(`previous_help_${interaction.user.id}`, 'Previous page', PaginationButton.styles.SECONDARY, null, null, false, data);
-            const next = new PaginationButton(`next_help_${interaction.user.id}`, 'Next page', PaginationButton.styles.PRIMARY, null, null, false, data);
+            const previous = new PaginationButton(`previous_cheatsheet_${interaction.user.id}`, 'Previous page', PaginationButton.styles.SECONDARY, null, null, false, data);
+            const next = new PaginationButton(`next_cheatsheet_${interaction.user.id}`, 'Next page', PaginationButton.styles.PRIMARY, null, null, false, data);
 
             const row = new ActionRowBuilder()
                 .addComponents(previous.handle, next.handle);

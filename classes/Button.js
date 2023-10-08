@@ -28,10 +28,17 @@ class Button {
         return new Button(id, label, style, emoji, url, disabled);
     };
 
+    /**
+     * @param {String} id
+     * @return {Button}
+     */
     static get(id) {
         return this.buttons[id];
     };
 
+    /**
+     * @returns {Button[]}
+     */
     static getAll() {
         return this.buttons;
     };
