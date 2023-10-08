@@ -3,6 +3,10 @@ const scheduler = require('node-schedule');
 const { Events, GuildScheduledEventPrivacyLevel, GuildScheduledEventEntityType, GuildScheduledEventManager } = require('discord.js');
 
 /**
+ * @param {number} startHour
+ * @param {number} startMinute
+ * @param {number} endHour
+ * @param {number} endMinute
  * @returns {{at: Date, end: Date}}
  */
 function defineTimestamp(startHour, startMinute, endHour, endMinute) {
@@ -55,21 +59,27 @@ async function scheduleStandUp(events) {
     });
 };
 
-function initializeEventScheduler() {
+/**
+ * @param {Range} dayOfWeek
+ * @param {function(GuildScheduledEventManager): void} callback
+ */
+function startScheduler(dayOfWeek, callback) {
     scheduler.scheduleJob({
         hour: 9,
         minute: 0,
-        dayOfWeek: new scheduler.Range(1, 5)
+        dayOfWeek: dayOfWeek
     }, async () => {
-
         const guilds = client.guilds.cache;
         guilds.forEach(async guild => {
             const events = guild.scheduledEvents;
-            await scheduleSpeakerOfTheDay(events);
-            await scheduleStandUp(events);
+            await callback(events);
         });
-
     });
+};
+
+function initializeEventScheduler() {
+    startScheduler(new scheduler.Range(1, 5), scheduleSpeakerOfTheDay);
+    startScheduler(new scheduler.Range(2, 5), scheduleStandUp);
 };
 
 client.on(Events.ClientReady, initializeEventScheduler);
