@@ -57,8 +57,8 @@ async function scheduleStandUp(events) {
 
 function initializeEventScheduler() {
     scheduler.scheduleJob({
-        hour: 12,
-        minute: 48,
+        hour: 9,
+        minute: 0,
         dayOfWeek: new scheduler.Range(1, 5)
     }, async () => {
 
