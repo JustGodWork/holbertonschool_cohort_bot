@@ -11,10 +11,8 @@ const { Events, GuildScheduledEventPrivacyLevel, GuildScheduledEventEntityType, 
  */
 function defineTimestamp(startHour, startMinute, endHour, endMinute) {
     const at = new Date();
-    at.setDate(at.getDate() + 1);
     at.setHours(startHour, startMinute);
     const end = new Date();
-    end.setDate(end.getDate() + 1);
     end.setHours(endHour, endMinute);
     return {at, end};
 };
