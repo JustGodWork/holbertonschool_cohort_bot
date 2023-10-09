@@ -1,83 +1,62 @@
-const client = require('../classes/HolbieClient');
 const scheduler = require('node-schedule');
-const { Events, GuildScheduledEventPrivacyLevel, GuildScheduledEventEntityType, GuildScheduledEventManager } = require('discord.js');
+const client = require('../classes/HolbieClient');
+const GuildEvent = require('../classes/GuildEvent');
+const ScheduledTime = require('../classes/ScheduledTime');
+const {
+    Events,
+    GuildScheduledEventManager
+} = require('discord.js');
 
-/**
- * @param {number} startHour
- * @param {number} startMinute
- * @param {number} endHour
- * @param {number} endMinute
- * @returns {{at: Date, end: Date}}
- */
-function defineTimestamp(startHour, startMinute, endHour, endMinute) {
-    const at = new Date();
-    at.setHours(startHour, startMinute);
-    const end = new Date();
-    end.setHours(endHour, endMinute);
-    return {at, end};
+const scheduledLaunch = {
+    hour: 8,
+    minute: 30,
 };
 
 /**
- * @param {GuildScheduledEventManager} events
- */
-async function scheduleSpeakerOfTheDay(events) {
-    const {at, end} = defineTimestamp(11, 30, 11, 45);
-    console.log('Speaker of the day event starting...');
-    await events.create({
-        name: 'Speaker of the day',
-        scheduledStartTime: at,
-        scheduledEndTime: end,
-        privacyLevel: GuildScheduledEventPrivacyLevel.GuildOnly,
-        entityType: GuildScheduledEventEntityType.External,
-        description: 'A new day, a new speaker!',
-        channel: undefined,
-        entityMetadata: {location: 'https://holberton-fr.zoom.us/j/84822594283?pwd=aW5kRGpXcTFQb3hrUld2WjhsbExyQT09'},
-        image: undefined,
-        reason: 'Speaker of the day event created by the scheduler.'
-    });
-};
-
-/**
- * @param {GuildScheduledEventManager} events
- */
-async function scheduleStandUp(events) {
-    const {at, end} = defineTimestamp(11, 45, 12, 0);
-    console.log('Stand Up event starting...');
-    await events.create({
-        name: 'Stand Up',
-        scheduledStartTime: at,
-        scheduledEndTime: end,
-        privacyLevel: GuildScheduledEventPrivacyLevel.GuildOnly,
-        entityType: GuildScheduledEventEntityType.External,
-        description: 'A new day, a new stand up!',
-        channel: undefined,
-        entityMetadata: {location: 'https://discordapp.com/channels/976357520895528960/1116818498212085881'},
-        image: undefined,
-        reason: 'Stand Up event created by the scheduler.'
-    });
-};
-
-/**
- * @param {Range} dayOfWeek
+ * @param {Number | Range} dayOfWeek
  * @param {function(GuildScheduledEventManager): void} callback
  */
-function startScheduler(dayOfWeek, callback) {
+function addScheduler(dayOfWeek, callback) {
     scheduler.scheduleJob({
-        hour: 9,
-        minute: 0,
+        hour: scheduledLaunch.hour,
+        minute: scheduledLaunch.minute,
         dayOfWeek: dayOfWeek
-    }, async () => {
+    }, () => {
         const guilds = client.guilds.cache;
-        guilds.forEach(async guild => {
+        guilds.forEach(guild => {
             const events = guild.scheduledEvents;
-            await callback(events);
+            callback(events);
         });
     });
 };
 
-function initializeEventScheduler() {
-    startScheduler(new scheduler.Range(1, 5), scheduleSpeakerOfTheDay);
-    startScheduler(new scheduler.Range(2, 5), scheduleStandUp);
-};
+client.on(Events.ClientReady, () => {
 
-client.on(Events.ClientReady, initializeEventScheduler);
+    addScheduler(new scheduler.Range(1, 5), (events) => new GuildEvent(
+        events,
+        'Speaker of the day',
+        'A new day, a new speaker!',
+        'https://holberton-fr.zoom.us/j/84822594283?pwd=aW5kRGpXcTFQb3hrUld2WjhsbExyQT09',
+        new ScheduledTime(11, 30),
+        new ScheduledTime(11, 45)
+    )); // Monday to Friday
+
+    addScheduler(new scheduler.Range(2, 5), (events) => new GuildEvent(
+        events,
+        'Stand Up',
+        'A new day, a new stand up!',
+        'https://discordapp.com/channels/976357520895528960/1116818498212085881',
+        new ScheduledTime(11, 45),
+        new ScheduledTime(12, 0)
+    )); // Tuesday to Friday
+
+    addScheduler(1, events => new GuildEvent(
+        events,
+        'Check In',
+        'An new monday, a new Check In!',
+        'https://holberton-fr.zoom.us/j/5330416337?pwd=YzhTOERGaXptRmdORWlZZHZmT2pUdz09',
+        new ScheduledTime(9, 15),
+        new ScheduledTime(9, 45)
+    )); // Monday
+
+});
