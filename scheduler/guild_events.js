@@ -36,7 +36,7 @@ client.on(Events.ClientReady, () => {
         events,
         'Speaker of the day',
         'A new day, a new speaker!',
-        'https://holberton-fr.zoom.us/j/84822594283?pwd=aW5kRGpXcTFQb3hrUld2WjhsbExyQT09',
+        proess.env.SOD_LINK,
         new ScheduledTime(11, 30),
         new ScheduledTime(11, 45)
     )); // Monday to Friday
@@ -45,7 +45,7 @@ client.on(Events.ClientReady, () => {
         events,
         'Stand Up',
         'A new day, a new stand up!',
-        'https://discordapp.com/channels/976357520895528960/1116818498212085881',
+        process.env.STAND_UP_LINK,
         new ScheduledTime(11, 45),
         new ScheduledTime(12, 0)
     )); // Tuesday to Friday
@@ -54,7 +54,7 @@ client.on(Events.ClientReady, () => {
         events,
         'Check In',
         'An new monday, a new Check In!',
-        'https://holberton-fr.zoom.us/j/5330416337?pwd=YzhTOERGaXptRmdORWlZZHZmT2pUdz09',
+        process.env.CHECK_IN_LINK,
         new ScheduledTime(9, 15),
         new ScheduledTime(9, 45)
     )); // Monday
