@@ -36,7 +36,7 @@ client.on(Events.ClientReady, () => {
         events,
         'Speaker of the day',
         'A new day, a new speaker!',
-        proess.env.SOD_LINK,
+        process.env.SOD_LINK,
         new ScheduledTime(11, 30),
         new ScheduledTime(11, 45)
     )); // Monday to Friday
