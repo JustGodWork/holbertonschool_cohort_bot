@@ -34,7 +34,7 @@ client.on(Events.ClientReady, () => {
 
     addScheduler(new scheduler.Range(1, 5), (events) => new GuildEvent(
         events,
-        'Speaker of the day',
+        'Speaker Of the Day',
         'A new day, a new speaker!',
         process.env.SOD_LINK,
         new ScheduledTime(11, 30),
@@ -46,8 +46,8 @@ client.on(Events.ClientReady, () => {
         'Stand Up',
         'A new day, a new stand up!',
         process.env.STAND_UP_LINK,
-        new ScheduledTime(11, 45),
-        new ScheduledTime(12, 0)
+        new ScheduledTime(14, 00),
+        new ScheduledTime(14, 15)
     )); // Tuesday to Friday
 
     addScheduler(1, events => new GuildEvent(
